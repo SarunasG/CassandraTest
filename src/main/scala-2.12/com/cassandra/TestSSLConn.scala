@@ -18,15 +18,18 @@ import com.datastax.driver.core._
 
 object TestSSLConn {
 
-  val conf = new CassandraConfig
+
   var myResults: ResultSet = _
   var session = None: Option[Session]
   var sslOptions = None: Option[JdkSSLOptions]
 
-  import conf._
+
 
   def main(args: Array[String]) {
 
+    val configPath = args(0)
+    val conf = new CassandraConfig(configPath)
+    import conf._
 
     val cipherSuites: Array[String] = Array("TLS_RSA_WITH_AES_128_CBC_SHA",
       "TLS_RSA_WITH_AES_256_CBC_SHA")
@@ -93,11 +96,6 @@ object TestSSLConn {
     }
 
 
-    /*    val cluster = Cluster.builder()
-          .addContactPoints(contactPoints)
-          .withSSL(sslOptions.get)
-          .withCredentials(userName, userPassword)
-          .build()*/
 
     try {
       println("connecting to Cassandra DB...")

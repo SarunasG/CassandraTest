@@ -1,14 +1,18 @@
 package com.cassandra
 
 import com.typesafe.config.ConfigFactory
+import java.io.File
 
 /**
   * Created by BC0414 on 06/03/17.
   */
-final class CassandraConfig {
+final class CassandraConfig(configPath : String) {
+
+  val myConfigFile = new File(configPath)
+  val fileConfig = ConfigFactory.parseFile(myConfigFile).getConfig("cassandra-config")
 
 
-  protected val config = ConfigFactory.load.getConfig("cassandra-config")
+  protected val config = ConfigFactory.load(fileConfig)
 
   val sslStatus = config.getString("ssl.status").toBoolean
   val sslOneWay = config.getString("ssl.oneway").toBoolean
