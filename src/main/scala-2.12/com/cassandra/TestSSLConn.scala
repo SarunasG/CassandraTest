@@ -14,7 +14,10 @@ import java.security.SecureRandom
 
 import collection.JavaConversions._
 import com.datastax.driver.core._
+import com.datastax.driver.core.exceptions.AuthenticationException
 import com.datastax.driver.core.policies.{DCAwareRoundRobinPolicy, DowngradingConsistencyRetryPolicy, TokenAwarePolicy}
+
+import scala.util.Try
 
 
 object TestSSLConn {
@@ -95,6 +98,7 @@ object TestSSLConn {
         }
 
       } catch {
+        case e: AuthenticationException => println("Cassandra Authentication issue - check user name or password !")
         case e: NullPointerException => println("Connection not opened due to Exception with Cassandra DB")
         case e: com.datastax.driver.core.exceptions.NoHostAvailableException =>
           println("Connection refused, please verify provided host is available")
@@ -104,9 +108,15 @@ object TestSSLConn {
       case e: Exception => (e.printStackTrace())
     }
 
-    if (!session.get.isClosed) {
-      session.get.close()
-      cluster.close()
+    session match {
+
+      case Some(_) =>
+        if (!session.get.isClosed) {
+          session.get.close()
+          cluster.close()
+        }
+      case None => cluster.close()
+
     }
   }
 
