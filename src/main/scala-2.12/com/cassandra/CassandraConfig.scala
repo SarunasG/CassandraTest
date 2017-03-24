@@ -4,7 +4,7 @@ import com.typesafe.config.ConfigFactory
 import java.io.File
 
 /**
-  * Created by BC0414 on 06/03/17.
+  * Created by Sarunas G on 06/03/17.
   */
 final class CassandraConfig(configPath : String) {
 
@@ -23,6 +23,9 @@ final class CassandraConfig(configPath : String) {
   val contactPoints = config.getString("contactPoints")
   val userName = config.getString("cassandra.username")
   val userPassword = config.getString("cassandra.password")
+  val datacenterName = config.getString("datacenterName")
+  val consistencyLevel = config.getString("consistencyLevel")
+  val hostsPerRemote = config.getInt("hostsPerRemote")
   val query = config.getString("cassandra.query")
 
 
