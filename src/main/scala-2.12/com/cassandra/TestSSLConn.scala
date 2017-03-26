@@ -2,12 +2,11 @@ package com.cassandra
 
 
 /**
-  * Created by Saruas G on 02/03/17.
+  * Created by Sarunas G on 02/03/17.
   */
 
-import javax.net.ssl.KeyManagerFactory
-import javax.net.ssl.SSLContext
-import javax.net.ssl.TrustManagerFactory
+import java.net.InetAddress
+import javax.net.ssl.{KeyManager, KeyManagerFactory, SSLContext, TrustManagerFactory}
 import java.io.{File, FileInputStream}
 import java.security.KeyStore
 import java.security.SecureRandom
@@ -22,25 +21,17 @@ import scala.util.Try
 
 object TestSSLConn {
 
-
   var myResults: ResultSet = _
   var session = None: Option[Session]
-  //var sslOptions = None: Option[JdkSSLOptions]
-
 
   def main(args: Array[String]) {
 
-    val configPath = args(0)
-    val conf = new CassandraConfig(configPath)
+    val configPath = Try(args(0))
+    val conf = new CassandraConfig(configPath.getOrElse("./src/main/resources/application.conf"))
     import conf._
 
-    val consistencyLevelDC = ConsistencyLevel.valueOf(consistencyLevel)
-    val cipherSuites: Array[String] = Array("TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_RSA_WITH_AES_256_CBC_SHA")
-    val loadBalancingPolicy = DCAwareRoundRobinPolicy.builder()
-      .withLocalDc(datacenterName)
-      .withUsedHostsPerRemoteDc(hostsPerRemote)
-      .build()
 
+    val cipherSuites: Array[String] = Array("TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_RSA_WITH_AES_256_CBC_SHA")
 
     val sslContext = if (sslStatus) {
       if (sslOneWay) {
@@ -52,7 +43,6 @@ object TestSSLConn {
       null
     }
 
-
     val buildSSLOptions = () => {
 
       Some(JdkSSLOptions
@@ -62,6 +52,15 @@ object TestSSLConn {
         .build())
     }
 
+    val contactPointsInDC = scala.collection.mutable.Set[InetAddress]()
+    contactPoints.split(".").foreach(ip => contactPointsInDC.add(InetAddress.getByName(ip)))
+
+    val consistencyLevelDC = ConsistencyLevel.valueOf(consistencyLevel)
+
+    val loadBalancingPolicy = DCAwareRoundRobinPolicy.builder()
+      .withLocalDc(datacenterName)
+      .withUsedHostsPerRemoteDc(hostsPerRemote)
+      .build()
 
     val buildCluster = (sslStatus: Boolean) => {
 
@@ -72,10 +71,10 @@ object TestSSLConn {
         .withQueryOptions(new QueryOptions().setConsistencyLevel(consistencyLevelDC))
         .withCredentials(userName, userPassword)
 
-      sslStatus match {
-
-        case true => cluster.withSSL(buildSSLOptions().get).build()
-        case false => cluster.build()
+      if (sslStatus) {
+        cluster.withSSL(buildSSLOptions().get).build()
+      } else {
+        cluster.build()
       }
     }
 
@@ -87,7 +86,7 @@ object TestSSLConn {
       try {
 
         session = Some(cluster.connect())
-        println(session.getOrElse(throw new RuntimeException("Cassandra DB connection error. Session is null")).getState().toString())
+        println(session.getOrElse(throw new RuntimeException("Cassandra DB connection error. Session is null")).getState.toString())
         println(session.get.getCluster.getClusterName)
         println(session.get.getCluster.getConfiguration.getQueryOptions)
 
@@ -105,7 +104,7 @@ object TestSSLConn {
       }
     }
     catch {
-      case e: Exception => (e.printStackTrace())
+      case e: Exception => e.printStackTrace()
     }
 
     session match {
@@ -155,7 +154,10 @@ object TestSSLConn {
 
       }
 
-      ctx.init(kmf.get.getKeyManagers, tmf.getTrustManagers, new SecureRandom())
+      kmf match {
+        case Some(_) => ctx.init(kmf.get.getKeyManagers, tmf.getTrustManagers, new SecureRandom())
+        case None => ctx.init(Array(KeyManager), tmf.getTrustManagers, new SecureRandom())
+      }
     }
 
     ctx
