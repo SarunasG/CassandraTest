@@ -69,7 +69,7 @@ object TestSSLConn {
     val buildCluster = (sslStatus: Boolean) => {
 
       val cluster = Cluster.builder()
-        .addContactPoints(contactPoints)
+        .addContactPoints(contactPointsInDC)
         .withRetryPolicy(DowngradingConsistencyRetryPolicy.INSTANCE)
         .withLoadBalancingPolicy(new TokenAwarePolicy(loadBalancingPolicy))
         .withQueryOptions(new QueryOptions().setConsistencyLevel(consistencyLevelDC))
@@ -139,9 +139,7 @@ object TestSSLConn {
     if (checkFileExists(trustStorePath)) {
 
       tsf = Some(new FileInputStream(trustStorePath))
-      ksf = Some(new FileInputStream(keystorePath))
-
-      ts.load(tsf.get, trustStorePassword.toCharArray)
+            ts.load(tsf.get, trustStorePassword.toCharArray)
       val tmf =
         TrustManagerFactory.getInstance(
           TrustManagerFactory.getDefaultAlgorithm)
@@ -149,6 +147,7 @@ object TestSSLConn {
 
       if (keystorePath != null) {
 
+        ksf = Some(new FileInputStream(keystorePath))
         ks.load(ksf.get, keystorePassword.toCharArray)
 
         kmf =
