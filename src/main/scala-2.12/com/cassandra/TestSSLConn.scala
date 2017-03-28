@@ -53,7 +53,7 @@ object TestSSLConn {
     }
 
     val contactPointsInDC = scala.collection.mutable.Set[InetAddress]()
-    contactPoints.split(".").foreach(ip => contactPointsInDC.add(InetAddress.getByName(ip)))
+    contactPoints.split(",").foreach(ip => contactPointsInDC.add(InetAddress.getByName(ip)))
 
     val consistencyLevelDC = ConsistencyLevel.valueOf(consistencyLevel)
     val loadBalancingPolicy = consistencyLevel match {
