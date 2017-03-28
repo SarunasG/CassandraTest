@@ -14,7 +14,7 @@ import java.security.SecureRandom
 import collection.JavaConversions._
 import com.datastax.driver.core._
 import com.datastax.driver.core.exceptions.AuthenticationException
-import com.datastax.driver.core.policies.{DCAwareRoundRobinPolicy, DowngradingConsistencyRetryPolicy, TokenAwarePolicy}
+import com.datastax.driver.core.policies.{DCAwareRoundRobinPolicy, DowngradingConsistencyRetryPolicy, RoundRobinPolicy, TokenAwarePolicy}
 
 import scala.util.Try
 
@@ -56,11 +56,15 @@ object TestSSLConn {
     contactPoints.split(".").foreach(ip => contactPointsInDC.add(InetAddress.getByName(ip)))
 
     val consistencyLevelDC = ConsistencyLevel.valueOf(consistencyLevel)
+    val loadBalancingPolicy = consistencyLevel match {
 
-    val loadBalancingPolicy = DCAwareRoundRobinPolicy.builder()
-      .withLocalDc(datacenterName)
-      .withUsedHostsPerRemoteDc(hostsPerRemote)
-      .build()
+      case "QUORUM" => new RoundRobinPolicy()
+      case "LOCAL_QUORUM" => DCAwareRoundRobinPolicy.builder()
+        .withLocalDc(datacenterName)
+        .withUsedHostsPerRemoteDc(hostsPerRemote)
+        .build()
+    }
+
 
     val buildCluster = (sslStatus: Boolean) => {
 
